@@ -143,7 +143,7 @@
     var cy = 1, sy = 0, cp = 1, sp = 0;
     var t = 0, on = true, hits = 0, next = 3;
     var rip = [], drones = [], sparks = [], labels = [], G = [];
-    var zoom = 1, fx = 0, fy = 0, ox = 0, oy = 0, shake = 0, lowQ = false, slow = 0;
+    var zoom = 1, fx = 0, fy = 0, ox = 0, oy = 0, shake = 0, lowQ = false, slow = 0, weak = false;
     var LX = -.45, LY = .75, LZ = .5, LL = Math.hypot(LX, LY, LZ); LX /= LL; LY /= LL; LZ /= LL;
     /* поверхности: 0 — кровля, 1 — фасад z+, 2 — фасад z−, 3 — торец x+, 4 — торец x− */
     var NRM = [[0, 1, 0], [0, 0, 1], [0, 0, -1], [1, 0, 0], [-1, 0, 0]];
@@ -365,6 +365,34 @@
       if (d.user) { shake = 9; labels.push({ s: d.s, a: d.a, b: d.b, t: 0 }); }
       if (hint) { hint.classList.add('done'); hint.innerHTML = 'Остановлено дронов: <b>' + hits + '</b>'; }
     }
+    /* слабые места: провис между мачтами, провис кровли и отступ сетки от стены */
+    function pill(text, p, bg, fg) {
+      var fs = 12.5 / Math.max(1, zoom * .8); g.font = '600 ' + fs + 'px Segoe UI, Roboto, Arial, sans-serif'; g.textAlign = 'center';
+      var tw = g.measureText(text).width + fs * 1.3; g.fillStyle = bg; g.beginPath();
+      if (g.roundRect) g.roundRect(p[0] - tw / 2, p[1] - fs * 1.15, tw, fs * 1.7, fs); else g.rect(p[0] - tw / 2, p[1] - fs * 1.15, tw, fs * 1.7);
+      g.fill(); g.fillStyle = fg; g.fillText(text, p[0], p[1]);
+    }
+    function zone(s, a0, a1, b0, b1) {
+      var e, q = 8; g.beginPath();
+      for (e = 0; e <= q; e++) { var p = SP(s, a0 + (a1 - a0) * e / q, b1, -.012); e ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]); }
+      for (e = q; e >= 0; e--) { var p2 = SP(s, a0 + (a1 - a0) * e / q, b0, -.012); g.lineTo(p2[0], p2[1]); }
+      g.closePath(); g.fillStyle = 'rgba(255,77,109,' + (.2 + .06 * Math.sin(t * 3)) + ')'; g.fill(); g.strokeStyle = 'rgba(255,77,109,.9)'; g.lineWidth = 1.4; g.stroke();
+    }
+    function drawWeak(nearS) {
+      nearS.forEach(function (s) { var n = s < 3 ? NMX : 2; for (var k = 0; k < n; k++) zone(s, (k + .14) / n, (k + .86) / n, .32, .9); });
+      zone(0, .3, .7, .28, .72);
+      var lbl = [];
+      nearS.forEach(function (s) { var n = s < 3 ? NMX : 2, k = s < 3 ? 1 : 0; lbl.push([SP(s, (k + .5) / n, .62, -.02), 'Провис между мачтами']); });
+      lbl.push([SP(0, .5, .5, -.02), 'Провис кровли']);
+      var s1 = nearS.indexOf(1) >= 0 ? 1 : nearS.indexOf(2) >= 0 ? 2 : 0;
+      if (s1) {
+        var zs = s1 === 1 ? PZ : -PZ, zw = s1 === 1 ? .62 : -.62, a = P3(.4, .22, zs), b = P3(.4, .22, zw);
+        g.strokeStyle = '#C9F55B'; g.lineWidth = 2; g.setLineDash([5, 4]); line2(a, b); g.setLineDash([]);
+        g.fillStyle = '#C9F55B'; [a, b].forEach(function (p) { g.beginPath(); g.arc(p[0], p[1], 3.5, 0, 7); g.fill(); });
+        pill('Отступ от стены', [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2 - 12], '#C9F55B', '#0B0B0F');
+      }
+      lbl.forEach(function (l) { pill(l[1], l[0], '#FF4D6D', '#fff'); });
+    }
     function isFar(s) { var n = NRM[s], v = vw(n[0], n[1], n[2]); return v[2] > .02; }
     function line2(a, b) { g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke(); }
 
@@ -400,6 +428,7 @@
       drawNet(0, false);
       nearS.forEach(function (s) { drawNet(s, false); });
       nearM.forEach(drawMast);
+      if (weak) drawWeak(nearS);
 
       /* волна от удара — кольцо лежит на поверхности сетки */
       rip.forEach(function (r) {
@@ -449,7 +478,7 @@
       for (i = labels.length - 1; i >= 0; i--) {
         var l = labels[i]; l.t += dtReal; if (l.t > 2.3) { labels.splice(i, 1); continue; }
         var lp = SP(l.s, l.a, l.b, 0), la = Math.min(1, l.t * 6) * Math.min(1, (2.3 - l.t) * 2.5), fs = 14 / Math.max(1, zoom * .75);
-        g.font = '600 ' + fs + 'px Onest, Segoe UI, Arial, sans-serif'; g.textAlign = 'center';
+        g.font = '600 ' + fs + 'px Segoe UI, Roboto, Arial, sans-serif'; g.textAlign = 'center';
         var tw = g.measureText('Дрон остановлен').width + fs * 1.4, ly = lp[1] - lp[3] * .11 * 1.4 - 12 / zoom - l.t * 5;
         g.fillStyle = 'rgba(201,245,91,' + la + ')'; g.beginPath();
         if (g.roundRect) g.roundRect(lp[0] - tw / 2, ly - fs * 1.15, tw, fs * 1.75, fs); else g.rect(lp[0] - tw / 2, ly - fs * 1.15, tw, fs * 1.75);
@@ -461,6 +490,8 @@
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { F = 0; });
     if (calm) { frame(0); if (hint) hint.hidden = true; return; }
 
+    var wb = $('#weak');
+    if (wb) wb.addEventListener('click', function () { weak = !weak; wb.classList.toggle('on', weak); wb.setAttribute('aria-pressed', weak); wb.textContent = weak ? 'Скрыть слабые места' : 'Слабые места'; idle = 0; });
     /* вращение: тянем мышью или пальцем */
     var drag = null, moved = false;
     c.addEventListener('pointerdown', function (e) { drag = { x: e.clientX, y: e.clientY, yaw: yawT, pit: pitT }; moved = false; });
