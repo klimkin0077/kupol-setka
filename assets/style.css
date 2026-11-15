@@ -64,7 +64,8 @@ section{padding-block:clamp(48px,7vw,104px)}
 /* ---------- Первый экран ---------- */
 .hero{padding-top:92px;padding-bottom:0}
 .media{position:relative;border-radius:var(--r);overflow:hidden;background:radial-gradient(110% 85% at 72% 12%,#4a2df0 0%,#1c0f6b 34%,#0a0526 62%,var(--night) 100%);height:clamp(520px,calc(100vh - 124px),700px);isolation:isolate;border-top-left-radius:0}
-.media canvas{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:crosshair;touch-action:manipulation}
+.media canvas{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:crosshair;touch-action:pan-y}
+.media canvas.grab{cursor:grabbing}
 .media::after{content:"";position:absolute;inset:0;background:radial-gradient(60% 40% at 20% 100%,rgba(201,245,91,.16),transparent 70%);pointer-events:none}
 .notch{position:absolute;top:-1px;left:-1px;z-index:2;background:var(--bg);padding:7px 30px 24px 5px;border-bottom-right-radius:var(--r);max-width:min(900px,76%);display:grid;gap:14px}
 .notch::before,.notch::after{content:"";position:absolute;width:var(--r);height:var(--r);background:radial-gradient(circle at 100% 100%,transparent calc(var(--r) - .6px),var(--bg) var(--r))}
@@ -301,3 +302,12 @@ a.svc:hover p{color:var(--ink)}
   .grid4,.steps.s7{grid-template-columns:minmax(0,1fr)}
   .foot{grid-template-columns:minmax(0,1fr)}
 }
+
+/* ---------- 3D-модель: легенда и факты ---------- */
+.hud .lg{display:inline-flex;align-items:center;gap:8px}
+.hud .lg i{width:18px;height:10px;border-radius:2px;flex:none}
+.hud .lg .l1{background:repeating-linear-gradient(90deg,#DED6FF 0 1.5px,transparent 1.5px 5px),repeating-linear-gradient(0deg,#DED6FF 0 1.5px,transparent 1.5px 5px)}
+.hud .lg .l2{background:repeating-linear-gradient(45deg,#C9F55B 0 1.5px,transparent 1.5px 5px),repeating-linear-gradient(-45deg,#C9F55B 0 1.5px,transparent 1.5px 5px)}
+.notch .facts{font-size:.84rem;color:var(--mute);font-weight:500}
+.media{height:clamp(560px,calc(100vh - 124px),760px)}
+@media (max-width:620px){.media{height:clamp(600px,calc(100vh - 170px),700px)}}
