@@ -340,3 +340,10 @@ a.svc:hover p{color:var(--ink)}
 .hud .lg .l1{background:repeating-linear-gradient(90deg,#E8E4FF 0 1.5px,transparent 1.5px 5px),repeating-linear-gradient(0deg,#E8E4FF 0 1.5px,transparent 1.5px 5px)}
 @media (max-width:1000px){.notch{max-width:100%}.media::before{background:linear-gradient(180deg,rgba(7,4,15,.8) 0%,rgba(7,4,15,.35) 30%,rgba(7,4,15,0) 46%)}}
 @media (max-width:620px){.notch{padding:20px 18px}.hud span,.hud button.wk{font-size:.72rem;padding:7px 10px}.media{height:clamp(640px,calc(100vh - 150px),740px)}}
+
+/* ---------- выбор беспилотника ---------- */
+.hud .sel{padding:3px;gap:2px;display:inline-flex;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:99px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.hud .sel button{font:500 .8rem/1 var(--body);padding:7px 12px;border-radius:99px;border:0;background:transparent;color:#fff;cursor:pointer}
+.hud .sel button.on{background:var(--lime);color:var(--ink);font-weight:600}
+@media (max-width:620px){.hud .sel button{font-size:.72rem;padding:6px 9px}.media{height:clamp(680px,calc(100vh - 120px),780px)}}
+@media (max-width:620px){.media{height:800px}}

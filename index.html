@@ -10,7 +10,7 @@
 <meta property="og:type" content="website">
 <meta name="theme-color" content="#ffffff">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%23C9F55B'/%3E%3Cpath d='M5 22 Q16 4 27 22M5 22 Q16 16 27 22M16 9v11' fill='none' stroke='%230B0B0F' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=10">
+<link rel="stylesheet" href="assets/style.css?v=12">
 </head>
 <body>
 <nav class="nav" aria-label="Главное меню"><div>
@@ -41,7 +41,7 @@
 <section class="hero">
   <div class="wrap">
     <div class="media" id="media">
-      <canvas id="dome" role="img" aria-label="Трёхмерная модель: здание под куполом из сеток «Барьер» и «Манье» на мачтах с оттяжками, тросы Ø30 и Ø19 выделены цветом. Нажмите на любую сторону купола — дрон ударит в эту точку и застрянет. Модель можно вращать."></canvas>
+      <canvas id="dome" role="img" aria-label="Трёхмерная модель: здание под куполом из сеток «Барьер» и «Манье» на мачтах с оттяжками, тросы Ø30 и Ø19 выделены цветом. Нажмите на любую сторону купола — беспилотник ударит в эту точку и застрянет. Модель можно вращать."></canvas>
       <div class="notch">
         <span class="dot">Купол. Небо на замке</span>
         <h1>Монтаж антидроновых сеток и&nbsp;тросовых систем</h1>
@@ -52,10 +52,11 @@
         <span class="facts">IV группа до и выше 1000 В · ПС 500 кВ и ГРЭС · смета за сутки</span>
       </div>
       <div class="hud">
-        <span class="hint-chip" id="hint">Нажмите на сетку · тяните, чтобы повернуть</span>
+        <span class="hint-chip" id="hint">Выберите беспилотник и нажмите на сетку</span>
+        <span class="sel" role="group" aria-label="Тип беспилотника"><button type="button" class="on" data-ty="0" aria-pressed="true">Самолётный</button><button type="button" data-ty="1" aria-pressed="false">«Утка»</button><button type="button" data-ty="2" aria-pressed="false">Лёгкий самолёт</button></span>
         <button class="wk" id="weak" type="button" aria-pressed="false">Слабые места</button>
-        <span class="lg"><i class="c30"></i>Трос Ø30</span>
-        <span class="lg"><i class="c19"></i>Трос Ø19 и оттяжки</span>
+        <span class="lg"><i class="c30"></i>Трос Ø30: несущие и оттяжки</span>
+        <span class="lg"><i class="c19"></i>Трос Ø19</span>
         <span class="lg"><i class="l1"></i>Сетка «Барьер»</span>
         <span class="lg"><i class="l2"></i>Сетка «Манье»</span>
       </div>
@@ -89,7 +90,7 @@
 <section style="padding-top:0">
   <div class="wrap">
     <div class="rv" style="display:grid;gap:14px;margin-bottom:28px"><span class="dot">Слабые места</span><h2>Где защита проигрывает</h2><p class="hint" style="max-width:44em">Сетка сама объект не спасает. Спасает сетка, которая правильно натянута и стоит на правильном расстоянии. На модели вверху страницы эти места подсвечивает кнопка «Слабые места».</p></div>
-<div class="grid4"><div class="risk rv"><small class="chip red">Риск</small><h3>Провис фасада</h3><p>Между мачтами полотно провисает. При ударе оно уходит внутрь ещё сильнее, и запас до стены тает.</p><div class="do"><small class="chip ok">Что делаем</small><p>Добиваем натяжение и ставим промежуточные тросы по проекту.</p></div></div><div class="risk rv"><small class="chip red">Риск</small><h3>Сетка близко к зданию</h3><p>Если полотно висит рядом со стеной, дрон продавит его и достанет до здания. Сетка выдержит, а стена и оборудование получат повреждения.</p><div class="do"><small class="chip ok">Что делаем</small><p>До монтажа сверяем отступ с проектом. Если расстояния не хватает, говорим об этом сразу, а не после сдачи.</p></div></div><div class="risk rv"><small class="chip red">Риск</small><h3>Стыки полотен</h3><p>Плохо связанный стык расходится от удара, и в сетке появляется проход.</p><div class="do"><small class="chip ok">Что делаем</small><p>Вяжем стыки по всей длине с шагом, который задан проектом.</p></div></div><div class="risk rv"><small class="chip red">Риск</small><h3>Низ и проёмы</h3><p>Щель у земли, ворота и проезды остаются открытыми, если про них забыли.</p><div class="do"><small class="chip ok">Что делаем</small><p>Закрываем низ полотна и заранее согласуем, как защищаются ворота и проезды.</p></div></div></div>
+<div class="grid4"><div class="risk rv"><small class="chip red">Риск</small><h3>Провис фасада</h3><p>Между мачтами полотно провисает. При ударе оно уходит внутрь ещё сильнее, и запас до стены тает.</p><div class="do"><small class="chip ok">Что делаем</small><p>Добиваем натяжение и ставим промежуточные тросы по проекту.</p></div></div><div class="risk rv"><small class="chip red">Риск</small><h3>Сетка близко к зданию</h3><p>Если полотно висит рядом со стеной, беспилотник продавит его и достанет до здания. Сетка выдержит, а стена и оборудование получат повреждения.</p><div class="do"><small class="chip ok">Что делаем</small><p>До монтажа сверяем отступ с проектом. Если расстояния не хватает, говорим об этом сразу, а не после сдачи.</p></div></div><div class="risk rv"><small class="chip red">Риск</small><h3>Стыки полотен</h3><p>Плохо связанный стык расходится от удара, и в сетке появляется проход.</p><div class="do"><small class="chip ok">Что делаем</small><p>Вяжем стыки по всей длине с шагом, который задан проектом.</p></div></div><div class="risk rv"><small class="chip red">Риск</small><h3>Низ и проёмы</h3><p>Щель у земли, ворота и проезды остаются открытыми, если про них забыли.</p><div class="do"><small class="chip ok">Что делаем</small><p>Закрываем низ полотна и заранее согласуем, как защищаются ворота и проезды.</p></div></div></div>
   </div>
 </section>
 
@@ -251,6 +252,6 @@
     <button class="pill ghostd" type="button" data-ck="need">Только необходимые</button>
   </div>
 </div>
-<script src="assets/app.js?v=10"></script>
+<script src="assets/app.js?v=12"></script>
 </body>
 </html>
