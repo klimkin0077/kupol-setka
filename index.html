@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;500&family=Onest:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="assets/style.css">
+<link rel="stylesheet" href="assets/style.css?v=3">
 </head>
 <body>
 <nav class="nav" aria-label="Главное меню"><div>
@@ -42,7 +42,7 @@
 <section class="hero">
   <div class="wrap">
     <div class="media" id="media">
-      <canvas id="dome" role="img" aria-label="Трёхмерная модель защитной сетки на мачтах: дрон подлетает и вязнет в сетке"></canvas>
+      <canvas id="dome" role="img" aria-label="Трёхмерная модель защитной сетки на мачтах. Нажмите на сетку: дрон упадёт в эту точку и застрянет"></canvas>
       <div class="notch">
         <span class="dot">Купол. Небо на замке</span>
         <h1>Монтаж антидроновых сеток и&nbsp;тросовых систем</h1>
@@ -52,6 +52,7 @@
         </div>
       </div>
       <div class="hud">
+        <span class="hint-chip" id="hint">Нажмите на сетку</span>
         <span><b>IV группа</b> до и выше 1000 В</span>
         <span>ПС 500 кВ и ГРЭС</span>
         <span>Смета <b>за сутки</b></span>
@@ -269,6 +270,6 @@
     <button class="pill ghostd" type="button" data-ck="need">Только необходимые</button>
   </div>
 </div>
-<script src="assets/app.js"></script>
+<script src="assets/app.js?v=3"></script>
 </body>
 </html>
