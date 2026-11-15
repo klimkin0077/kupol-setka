@@ -138,7 +138,7 @@
     var g = c.getContext('2d'), box = $('#media'), notch = $('.notch', box), hint = $('#hint');
     var W = 0, H = 0, DPR = Math.min(window.devicePixelRatio || 1, 2), lite = innerWidth < 620;
     var PX = 2, PZ = 1.25, MH = 1.15, NMX = 4, CAM = 7.5, OFF = .05;
-    var NU = lite ? 28 : 40, NV = lite ? 16 : 24, NB = lite ? 6 : 8;
+    var NU = lite ? 32 : 40, NV = lite ? 16 : 24, NB = lite ? 6 : 8;
     var F = 0, CX = 0, CY = 0, yaw = .62, pit = .5, yawT = .62, pitT = .5, idle = 9;
     var cy = 1, sy = 0, cp = 1, sp = 0;
     var t = 0, on = true, hits = 0, next = 3;
@@ -161,11 +161,11 @@
     /* вписываем модель в свободную часть экрана при любом повороте */
     function fit(k) {
       var nh = notch ? notch.offsetHeight : 0, narrow = W < 700;
-      var x0 = W * (narrow ? .03 : .16), x1 = W * .98, y0 = (narrow ? nh : nh * .86) + 14, y1 = H - (narrow ? 118 : 74);
+      var wide = W >= 1000, x0 = W * (narrow ? .02 : wide ? .33 : .1), x1 = W * .99, y0 = narrow ? nh + 4 : wide ? 46 : nh * .85, y1 = H - (narrow ? 150 : 78);
       if (y1 - y0 < 160) y0 = y1 - 160;
       var a = 1e9, b = -1e9, cc = 1e9, d = -1e9;
       [-1, 1].forEach(function (i) { [-1, 1].forEach(function (j) { [0, MH].forEach(function (y) {
-        var v = vw(i * (PX + .12), y, j * (PZ + .12)), s = 1 / (v[2] + CAM), x = v[0] * s, yy = -v[1] * s;
+        var v = vw(i * (PX + .62), y, j * (PZ + .62)), s = 1 / (v[2] + CAM), x = v[0] * s, yy = -v[1] * s;
         if (x < a) a = x; if (x > b) b = x; if (yy < cc) cc = yy; if (yy > d) d = yy;
       }); }); });
       var Ft = Math.min((x1 - x0) / (b - a), (y1 - y0) / (d - cc));
@@ -202,9 +202,10 @@
     }
     function SP(s, a, b, off) { var w = S(s, a, b, off); return P3(w[0], w[1], w[2]); }
     function grid(s) {
-      var n = CNT[s][0], m = CNT[s][1], L = [[], []];
-      for (var i = 0; i <= n; i++) { L[0][i] = []; L[1][i] = []; for (var j = 0; j <= m; j++) { L[0][i][j] = SP(s, i / n, j / m, 0); L[1][i][j] = SP(s, i / n, j / m, OFF); } }
-      G[s] = L;
+      var n = CNT[s][0], m = CNT[s][1], A = [], Hx = [], i, j;
+      for (i = 0; i <= n; i++) { A[i] = []; for (j = 0; j <= m; j++) A[i][j] = SP(s, i / n, j / m, 0); }
+      for (j = 0; j <= m; j++) { Hx[j] = []; for (i = 0; i <= n; i++) Hx[j][i] = SP(s, i / n, Math.min(1, (j + ((i % 2 === 1) !== (j % 2 === 1) ? .36 : 0)) / (m + .36)), OFF); }
+      G[s] = [A, Hx];
     }
     function drawNet(s, far) {
       var n = CNT[s][0], m = CNT[s][1], A = G[s][0], M = G[s][1], i, j, k = far ? .42 : 1;
@@ -215,27 +216,30 @@
       for (i = n - 1; i >= 0; i--) g.lineTo(A[i][m][0], A[i][m][1]);
       for (j = m - 1; j > 0; j--) g.lineTo(A[0][j][0], A[0][j][1]);
       g.closePath(); g.fillStyle = 'rgba(120,100,255,' + (s ? .05 : .06) * k + ')'; g.fill();
-      /* внутренний слой — «Манье», ромбическая ячейка */
+      /* внутренний слой — «Манье», шестигранная ячейка двойного кручения */
       g.beginPath();
-      for (i = 0; i < n; i++) for (j = 0; j < m; j++) {
-        g.moveTo(M[i][j][0], M[i][j][1]); g.lineTo(M[i + 1][j + 1][0], M[i + 1][j + 1][1]);
-        g.moveTo(M[i + 1][j][0], M[i + 1][j][1]); g.lineTo(M[i][j + 1][0], M[i][j + 1][1]);
-      }
-      g.strokeStyle = 'rgba(201,245,91,' + .27 * k + ')'; g.lineWidth = .7; g.stroke();
+      for (j = 0; j <= m; j++) { g.moveTo(M[j][0][0], M[j][0][1]); for (i = 1; i <= n; i++) g.lineTo(M[j][i][0], M[j][i][1]); }
+      for (j = 0; j < m; j++) for (i = 0; i <= n; i++) if ((i % 2 === 1) !== (j % 2 === 1)) { g.moveTo(M[j][i][0], M[j][i][1]); g.lineTo(M[j + 1][i][0], M[j + 1][i][1]); }
+      g.strokeStyle = 'rgba(201,245,91,' + .42 * k + ')'; g.lineWidth = .8; g.stroke();
       /* внешний слой — антидроновая сетка, прямая ячейка */
       g.beginPath();
       for (i = 0; i <= n; i++) { g.moveTo(A[i][0][0], A[i][0][1]); for (j = 1; j <= m; j++) g.lineTo(A[i][j][0], A[i][j][1]); }
       for (j = 0; j <= m; j++) { g.moveTo(A[0][j][0], A[0][j][1]); for (i = 1; i <= n; i++) g.lineTo(A[i][j][0], A[i][j][1]); }
-      g.strokeStyle = 'rgba(222,214,255,' + .5 * k + ')'; g.lineWidth = .8; g.stroke();
+      g.strokeStyle = 'rgba(232,228,255,' + .4 * k + ')'; g.lineWidth = .7; g.stroke();
       /* тросы */
       function cable(pts, w) { g.beginPath(); pts.forEach(function (p, q) { q ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]); }); g.lineWidth = w; g.stroke(); }
       function col(i2) { var a = []; for (var q = 0; q <= m; q++) a.push(A[i2][q]); return a; }
       function row(j2) { var a = []; for (var q = 0; q <= n; q++) a.push(A[q][j2]); return a; }
-      g.strokeStyle = 'rgba(255,255,255,' + .95 * k + ')'; g.shadowColor = 'rgba(160,140,255,.9)'; g.shadowBlur = far || lowQ ? 0 : 7;
+      var c30 = 'rgba(77,216,255,' + (far ? .5 : 1) + ')', c19 = 'rgba(255,122,217,' + (far ? .45 : .95) + ')';
+      g.shadowBlur = far || lowQ ? 0 : 6;
       if (s === 0) {
-        for (i = 0; i <= NMX; i++) cable(col(i * n / NMX), i % NMX ? 1.6 : 2.3);
-        cable(row(0), 2.3); cable(row(m), 2.3); cable(row(m / 2), 1.6);
-      } else { cable(row(m), 2.3); g.shadowBlur = 0; g.strokeStyle = 'rgba(255,255,255,' + .5 * k + ')'; cable(row(0), 1.2); }
+        g.strokeStyle = c19; g.shadowColor = 'rgba(255,122,217,.8)';
+        for (i = 1; i < NMX * 2; i += 2) cable(col(i * n / (NMX * 2)), 1.8);
+        cable(row(m / 4), 1.8); cable(row(3 * m / 4), 1.8);
+        g.strokeStyle = c30; g.shadowColor = 'rgba(77,216,255,.8)';
+        for (i = 0; i <= NMX; i++) cable(col(i * n / NMX), 3);
+        cable(row(0), 3); cable(row(m), 3); cable(row(m / 2), 3);
+      } else { g.strokeStyle = c30; g.shadowColor = 'rgba(77,216,255,.8)'; cable(row(m), 3); g.shadowBlur = 0; g.strokeStyle = c19; cable(row(m / 2), 1.6); cable(row(0), 1.8); }
       g.shadowBlur = 0;
     }
 
@@ -246,9 +250,9 @@
     function drawMast(m) {
       var X = m[0], Z = m[1], w = .045, top = MH, n = 9, q, L = [[-w, -w], [w, -w], [w, w], [-w, w]];
       var a = P3(X, top, Z);
-      g.strokeStyle = 'rgba(255,255,255,.28)'; g.lineWidth = 1;
-      var gx = m[2] || (X > 0 ? .5 : X < 0 ? -.5 : 0), gz = m[3];
-      g.beginPath(); g.moveTo(a[0], a[1]); var e = P3(X + gx * .75, 0, Z + gz * .75); g.lineTo(e[0], e[1]); g.stroke();
+      drawBuilding(m.f);
+      g.strokeStyle = 'rgba(255,122,217,.85)'; g.lineWidth = 1.5; g.beginPath();
+      m.g.forEach(function (e2) { var e = P3(e2[0], .085, e2[1]); g.moveTo(a[0], a[1]); g.lineTo(e[0], e[1]); }); g.stroke();
       g.strokeStyle = 'rgba(240,236,255,.95)'; g.lineWidth = 1.5; g.beginPath();
       L.forEach(function (l) { var p0 = P3(X + l[0], 0, Z + l[1]), p1 = P3(X + l[0], top, Z + l[1]); g.moveTo(p0[0], p0[1]); g.lineTo(p1[0], p1[1]); });
       g.stroke();
@@ -263,56 +267,97 @@
     }
 
     /* ---------- здание: грани с нормалями, освещение, сортировка по глубине ---------- */
-    var FACES = [];
+    var FACES = [], TL = FACES;
     function face(pts, col, decor, nrm) {
       var a = pts[0], b = pts[1], d = pts[2], ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2], vx = d[0] - a[0], vy = d[1] - a[1], vz = d[2] - a[2];
       var n = nrm || [uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx], l = Math.hypot(n[0], n[1], n[2]) || 1;
-      FACES.push({ p: pts, n: [n[0] / l, n[1] / l, n[2] / l], c: col, d: decor || {} });
+      TL.push({ p: pts, n: [n[0] / l, n[1] / l, n[2] / l], c: col, d: decor || {} });
     }
     function boxF(x0, x1, y1, z0, z1, wc, rc, dec) {
-      dec = dec || {};
-      face([[x0, 0, z1], [x1, 0, z1], [x1, y1, z1], [x0, y1, z1]], wc, dec.front);
-      face([[x1, 0, z0], [x0, 0, z0], [x0, y1, z0], [x1, y1, z0]], wc, dec.back);
-      face([[x1, 0, z1], [x1, 0, z0], [x1, y1, z0], [x1, y1, z1]], wc, dec.right);
-      face([[x0, 0, z0], [x0, 0, z1], [x0, y1, z1], [x0, y1, z0]], wc, dec.left);
+      dec = dec || {}; var yb = dec.y0 || 0;
+      face([[x0, yb, z1], [x1, yb, z1], [x1, y1, z1], [x0, y1, z1]], wc, dec.front);
+      face([[x1, yb, z0], [x0, yb, z0], [x0, y1, z0], [x1, y1, z0]], wc, dec.back);
+      face([[x1, yb, z1], [x1, yb, z0], [x1, y1, z0], [x1, y1, z1]], wc, dec.right);
+      face([[x0, yb, z0], [x0, yb, z1], [x0, y1, z1], [x0, y1, z0]], wc, dec.left);
       if (!dec.noTop) face([[x0, y1, z1], [x1, y1, z1], [x1, y1, z0], [x0, y1, z0]], rc, dec.top);
     }
     function vlines(x0, x1, y0, y1, z, step) { var a = []; for (var x = x0 + step; x < x1 - .01; x += step) a.push([[x, y0, z], [x, y1, z]]); return a; }
     function zlines(z0, z1, y0, y1, x, step) { var a = []; for (var z = z0 + step; z < z1 - .01; z += step) a.push([[x, y0, z], [x, y1, z]]); return a; }
     (function build() {
-      var WALL = [118, 110, 196], ROOF = [156, 150, 228], DARK = [36, 30, 84], LIT = [201, 245, 91];
-      var x0 = -1.4, x1 = .95, z0 = -.62, z1 = .62, h = .5, gb = .13;
-      function wall(z, flip) {
-        var polys = [{ p: [[x0 + .1, h * .66, z], [x1 - .1, h * .66, z], [x1 - .1, h * .8, z], [x0 + .1, h * .8, z]], c: LIT, a: .75 }];
-        if (!flip) [-1.05, -.35, .35].forEach(function (dx) { polys.push({ p: [[dx, 0, z], [dx + .34, 0, z], [dx + .34, h * .52, z], [dx, h * .52, z]], c: DARK, a: 1 }); });
-        return { lines: vlines(x0, x1, 0, h, z, .13), polys: polys };
+      var WALL = [190, 194, 206], BASE = [98, 104, 122], ROOF = [136, 142, 158], GLASS = [104, 160, 226], GATE = [80, 88, 110], CONC = [164, 164, 172], CONCT = [188, 188, 196], DARK = [44, 48, 66];
+      function rz(xa, xb, ya, yb, z) { return [[xa, ya, z], [xb, ya, z], [xb, yb, z], [xa, yb, z]]; }
+      function rx(za, zb, ya, yb, x) { return [[x, ya, za], [x, ya, zb], [x, yb, zb], [x, yb, za]]; }
+      function winsZ(xa, xb, n, ya, yb, z, w) { var a = [], st = (xb - xa) / n; for (var i = 0; i < n; i++) { var c0 = xa + st * (i + .5); a.push({ p: rz(c0 - w / 2, c0 + w / 2, ya, yb, z), c: GLASS, a: .92, e: 1, s: 1 }); } return a; }
+      function winsX(za, zb, n, ya, yb, x, w) { var a = [], st = (zb - za) / n; for (var i = 0; i < n; i++) { var c0 = za + st * (i + .5); a.push({ p: rx(c0 - w / 2, c0 + w / 2, ya, yb, x), c: GLASS, a: .92, e: 1, s: 1 }); } return a; }
+      /* ---- цех: сэндвич-панели, цоколь, ленточные окна, секционные ворота, зенитные фонари ---- */
+      var x0 = -1.4, x1 = .9, z0 = -.62, z1 = .62, h = .5, gb = .13;
+      function hallWall(z, gates) {
+        var polys = [{ p: rz(x0, x1, 0, .05, z), c: BASE, a: 1 }].concat(winsZ(x0 + .1, x1 - .1, 10, .31, .43, z, .15)), lines = vlines(x0, x1, .05, h, z, .115);
+        if (gates) [-1.12, -.42, .28].forEach(function (gx) {
+          polys.push({ p: rz(gx, gx + .36, 0, .25, z), c: GATE, a: 1, s: 1 });
+          for (var q = 1; q < 5; q++) lines.push([[gx, .05 * q, z], [gx + .36, .05 * q, z]]);
+          polys.push({ p: rz(gx + .4, gx + .47, 0, .14, z), c: DARK, a: 1, s: 1 });
+        });
+        return { lines: lines, polys: polys };
       }
-      boxF(x0, x1, h, z0, z1, WALL, ROOF, { noTop: true, front: wall(z1), back: wall(z0, true), right: { lines: zlines(z0, z1, 0, h, x1, .13) }, left: { lines: zlines(z0, z1, 0, h, x0, .13) } });
-      var ribs1 = [], ribs2 = []; for (var x = x0 + .16; x < x1 - .05; x += .16) { ribs1.push([[x, h, z1], [x, h + gb, 0]]); ribs2.push([[x, h, z0], [x, h + gb, 0]]); }
-      face([[x0, h, z1], [x1, h, z1], [x1, h + gb, 0], [x0, h + gb, 0]], ROOF, { lines: ribs1 });
-      face([[x1, h, z0], [x0, h, z0], [x0, h + gb, 0], [x1, h + gb, 0]], ROOF, { lines: ribs2 });
+      function sideWall(x) { return { lines: zlines(z0, z1, .05, h, x, .115), polys: [{ p: rx(z0, z1, 0, .05, x), c: BASE, a: 1 }].concat(winsX(z0 + .1, z1 - .1, 5, .31, .43, x, .15)) }; }
+      boxF(x0, x1, h, z0, z1, WALL, ROOF, { noTop: true, front: hallWall(z1, true), back: hallWall(z0, false), right: sideWall(x1), left: sideWall(x0) });
+      function slope(zs, sgn) {
+        var ribs = [], sky = [], x, yy = function (z) { return h + gb * (1 - Math.abs(z) / z1); };
+        for (x = x0 + .115; x < x1 - .05; x += .115) ribs.push([[x, h, zs], [x, h + gb, 0]]);
+        for (x = x0 + .22; x < x1 - .3; x += .42) sky.push({ p: [[x, yy(.46 * sgn), .46 * sgn], [x + .2, yy(.46 * sgn), .46 * sgn], [x + .2, yy(.2 * sgn), .2 * sgn], [x, yy(.2 * sgn), .2 * sgn]], c: GLASS, a: .8, e: 1, s: 1 });
+        return { lines: ribs, polys: sky };
+      }
+      face([[x0, h, z1], [x1, h, z1], [x1, h + gb, 0], [x0, h + gb, 0]], ROOF, slope(z1, 1));
+      face([[x1, h, z0], [x0, h, z0], [x0, h + gb, 0], [x1, h + gb, 0]], ROOF, slope(z0, -1));
       face([[x1, h, z1], [x1, h, z0], [x1, h + gb, 0]], WALL); face([[x0, h, z0], [x0, h, z1], [x0, h + gb, 0]], WALL);
-      /* пристройка, вентблоки, щитовые */
-      boxF(.95, 1.45, .3, -.36, .36, [104, 96, 180], [140, 134, 214], { front: { lines: vlines(.95, 1.45, 0, .3, .36, .1), polys: [{ p: [[1.08, 0, .36], [1.3, 0, .36], [1.3, .2, .36], [1.08, .2, .36]], c: DARK, a: 1 }] }, right: { polys: [{ p: [[1.45, .16, .26], [1.45, .16, -.26], [1.45, .24, -.26], [1.45, .24, .26]], c: LIT, a: .7 }] } });
-      boxF(-1.0, -.8, .12, -1.0, -.82, [96, 90, 170], [130, 124, 204]); boxF(-.6, -.4, .12, -1.0, -.82, [96, 90, 170], [130, 124, 204]);
-      /* резервуары */
+      /* ---- АБК: три этажа, окна по сетке, вход с козырьком, вентблоки на кровле ---- */
+      var ax0 = .9, ax1 = 1.52, az0 = -.42, az1 = .42, ah = .48, AB = [204, 206, 214], fl, rows = [];
+      function abkZ(z, door) { var p = [{ p: rz(ax0, ax1, 0, .05, z), c: BASE, a: 1 }]; for (fl = 0; fl < 3; fl++) p = p.concat(winsZ(ax0 + .04, ax1 - .04, 4, .09 + fl * .14, .18 + fl * .14, z, .09)); if (door) { p.push({ p: rz(1.15, 1.27, 0, .12, z), c: DARK, a: 1, s: 1 }); } return { polys: p, lines: [[[ax0, .19, z], [ax1, .19, z]], [[ax0, .33, z], [ax1, .33, z]]] }; }
+      function abkX(x) { var p = [{ p: rx(az0, az1, 0, .05, x), c: BASE, a: 1 }]; for (fl = 0; fl < 3; fl++) p = p.concat(winsX(az0 + .05, az1 - .05, 6, .09 + fl * .14, .18 + fl * .14, x, .08)); return { polys: p, lines: [[[x, .19, az0], [x, .19, az1]], [[x, .33, az0], [x, .33, az1]]] }; }
+      boxF(ax0, ax1, ah, az0, az1, AB, [150, 154, 168], { front: abkZ(az1, true), back: abkZ(az0, false), right: abkX(ax1) });
+      boxF(1.1, 1.32, .065, az1, az1 + .1, DARK, [120, 126, 142], { y0: .13 });
+      boxF(1.0, 1.16, ah + .07, -.25, -.08, [150, 154, 166], [176, 180, 190], { y0: ah }); boxF(1.25, 1.42, ah + .06, .05, .25, [150, 154, 166], [176, 180, 190], { y0: ah });
+      /* ---- трансформаторы и щитовые ---- */
+      [[-1.05, -.92], [-.62, -.92]].forEach(function (c0) {
+        boxF(c0[0], c0[0] + .24, .15, c0[1] - .08, c0[1] + .08, [88, 96, 118], [116, 124, 146], { front: { lines: vlines(c0[0], c0[0] + .24, .02, .15, c0[1] + .08, .03) } });
+        boxF(c0[0] + .06, c0[0] + .1, .2, c0[1] - .02, c0[1] + .02, [170, 150, 140], [190, 170, 160], { y0: .15 }); boxF(c0[0] + .14, c0[0] + .18, .2, c0[1] - .02, c0[1] + .02, [170, 150, 140], [190, 170, 160], { y0: .15 });
+      });
+      /* ---- резервуары ---- */
       function tank(cx, cz, r, hh) {
-        var n = 16, top = [], i;
+        var n = 18, top = [], i;
         for (i = 0; i < n; i++) {
           var a0 = i / n * 6.2832, a1 = (i + 1) / n * 6.2832, p0 = [cx + r * Math.cos(a0), cz + r * Math.sin(a0)], p1 = [cx + r * Math.cos(a1), cz + r * Math.sin(a1)], am = (a0 + a1) / 2;
-          face([[p1[0], 0, p1[1]], [p0[0], 0, p0[1]], [p0[0], hh, p0[1]], [p1[0], hh, p1[1]]], [168, 164, 236], { soft: 1 }, [Math.cos(am), 0, Math.sin(am)]);
+          face([[p1[0], 0, p1[1]], [p0[0], 0, p0[1]], [p0[0], hh, p0[1]], [p1[0], hh, p1[1]]], [214, 216, 224], { soft: 1, lines: [[[p0[0], hh * .5, p0[1]], [p1[0], hh * .5, p1[1]]], [[p0[0], hh * .96, p0[1]], [p1[0], hh * .96, p1[1]]]] }, [Math.cos(am), 0, Math.sin(am)]);
           top.push([p0[0], hh, p0[1]]);
         }
-        face(top, [190, 186, 246], {}, [0, 1, 0]);
+        face(top, [232, 234, 240], {}, [0, 1, 0]);
       }
-      tank(1.55, .82, .24, .36); tank(1.02, .9, .2, .3);
+      tank(1.62, .86, .22, .36); tank(1.12, .9, .19, .3);
+      /* ---- фундаменты мачт и якорные блоки ФБС под оттяжки ---- */
+      MASTS.forEach(function (m) {
+        TL = m.f = []; m.g = [];
+        var X = m[0], Z = m[1], ox2 = m[2], oz2 = m[3], dirs;
+        boxF(X - .1, X + .1, .05, Z - .1, Z + .1, CONC, CONCT);
+        if (oz2) { dirs = [[-.3, .55 * oz2], [.3, .55 * oz2]]; if (Math.abs(X) > PX - .01) dirs.push([(X > 0 ? 1 : -1) * .55, .12 * oz2]); }
+        else dirs = [[.55 * ox2, -.3], [.55 * ox2, .3]];
+        dirs.forEach(function (d) {
+          var cx = X + d[0], cz = Z + d[1], lx = Math.abs(d[0]) > Math.abs(d[1]) ? .06 : .12, lz = lx === .06 ? .12 : .06;
+          boxF(cx - lx, cx + lx, .085, cz - lz, cz + lz, CONC, CONCT, { front: { lines: [[[cx - lx, .042, cz + lz], [cx + lx, .042, cz + lz]]] } });
+          m.g.push([cx, cz]);
+        });
+      });
+      TL = FACES;
     })();
-    function drawBuilding() {
-      /* тень на земле */
-      var sh = [P3(-1.5, 0, -.72), P3(1.75, 0, -.72), P3(1.75, 0, 1.12), P3(-1.5, 0, 1.12)];
-      g.fillStyle = 'rgba(4,2,16,.5)'; g.beginPath(); sh.forEach(function (p, i) { i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]); }); g.closePath(); g.fill();
+    function drawBuilding(LIST) {
+      if (!LIST) { /* площадка и тень на земле */
+        var pad = [P3(-PX + .06, 0, -PZ + .06), P3(PX - .06, 0, -PZ + .06), P3(PX - .06, 0, PZ - .06), P3(-PX + .06, 0, PZ - .06)];
+        g.fillStyle = 'rgba(190,196,220,.07)'; g.beginPath(); pad.forEach(function (p, i) { i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]); }); g.closePath(); g.fill();
+        var sh = [P3(-1.5, 0, -.72), P3(1.72, 0, -.72), P3(1.9, 0, 1.14), P3(-1.5, 0, .76)];
+        g.fillStyle = 'rgba(4,2,16,.5)'; g.beginPath(); sh.forEach(function (p, i) { i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]); }); g.closePath(); g.fill();
+      }
       var vis = [];
-      FACES.forEach(function (f) {
+      (LIST || FACES).forEach(function (f) {
         var n = vw(f.n[0], f.n[1], f.n[2]), cx2 = 0, cy2 = 0, cz2 = 0, k = f.p.length;
         var v = f.p.map(function (p) { var q = vw(p[0], p[1], p[2]); cx2 += q[0]; cy2 += q[1]; cz2 += q[2]; return q; });
         cx2 /= k; cy2 /= k; cz2 /= k;
@@ -321,16 +366,16 @@
       });
       vis.sort(function (a, b) { return b.z - a.z; });
       vis.forEach(function (o) {
-        var f = o.f, sh2 = .42 + .62 * Math.max(0, f.n[0] * LX + f.n[1] * LY + f.n[2] * LZ);
+        var f = o.f, sh2 = .5 + .56 * Math.max(0, f.n[0] * LX + f.n[1] * LY + f.n[2] * LZ);
         function path(v) { g.beginPath(); v.forEach(function (q, i) { var p = pr(q); i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]); }); g.closePath(); }
         function rgb(cc, a) { return 'rgba(' + Math.min(255, cc[0] * sh2 | 0) + ',' + Math.min(255, cc[1] * sh2 | 0) + ',' + Math.min(255, cc[2] * sh2 | 0) + ',' + a + ')'; }
         path(o.v); g.fillStyle = rgb(f.c, 1); g.fill();
-        g.strokeStyle = f.d.soft ? rgb(f.c, 1) : 'rgba(255,255,255,.3)'; g.lineWidth = f.d.soft ? 1 : .8; g.stroke();
-        if (f.d.lines) { g.beginPath(); f.d.lines.forEach(function (l) { var a = P3(l[0][0], l[0][1], l[0][2]), b = P3(l[1][0], l[1][1], l[1][2]); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); }); g.strokeStyle = 'rgba(20,14,70,.22)'; g.lineWidth = .8; g.stroke(); }
+        g.strokeStyle = f.d.soft ? rgb(f.c, 1) : 'rgba(18,22,40,.45)'; g.lineWidth = f.d.soft ? 1 : .8; g.stroke();
+        if (f.d.lines) { g.beginPath(); f.d.lines.forEach(function (l) { var a = P3(l[0][0], l[0][1], l[0][2]), b = P3(l[1][0], l[1][1], l[1][2]); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); }); g.strokeStyle = 'rgba(20,24,50,.26)'; g.lineWidth = .7; g.stroke(); }
         if (f.d.polys) f.d.polys.forEach(function (pl) {
           path(pl.p.map(function (p) { return vw(p[0], p[1], p[2]); }));
-          if (pl.c[0] === 201) { g.fillStyle = 'rgba(201,245,91,' + pl.a + ')'; g.fill(); }
-          else { g.fillStyle = rgb(pl.c, pl.a); g.fill(); }
+          g.fillStyle = pl.e ? 'rgba(' + pl.c[0] + ',' + pl.c[1] + ',' + pl.c[2] + ',' + pl.a + ')' : rgb(pl.c, pl.a); g.fill();
+          if (pl.s) { g.strokeStyle = 'rgba(16,20,38,.6)'; g.lineWidth = .7; g.stroke(); }
         });
       });
     }

@@ -322,3 +322,21 @@ a.svc:hover p{color:var(--ink)}
 .risk .do{border-top:1px solid var(--line);padding-top:12px;display:grid;gap:8px}
 .chip.red{background:#FF4D6D;color:#fff}.chip.ok{background:var(--lime)}
 @media (max-width:620px){.hud button.wk{font-size:.78rem;padding:8px 12px}}
+
+/* ---------- первый экран: текст поверх 3D-модели, без белой плашки ---------- */
+.media{border-top-left-radius:var(--r)}
+.media::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(100deg,rgba(7,4,15,.82) 0%,rgba(7,4,15,.5) 26%,rgba(7,4,15,0) 52%)}
+.notch{top:0;left:0;background:transparent;color:#fff;padding:clamp(22px,3vw,40px);max-width:min(620px,46%);border-radius:0;pointer-events:none;gap:16px}
+.notch::before,.notch::after{display:none}
+.notch a{pointer-events:auto}
+.notch h1{font-size:clamp(1.6rem,3.1vw,2.9rem);text-shadow:0 2px 24px rgba(7,4,15,.6)}
+.notch .pill.black{background:#fff;color:var(--ink)}
+.notch .pill.black i{background:var(--ink);color:#fff}
+.notch .facts{color:rgba(255,255,255,.72)}
+.hud{gap:8px}
+.hud span,.hud button.wk{font-size:.8rem;padding:8px 13px}
+.hud .lg .c30{height:3px;border-radius:2px;background:#4DD8FF;box-shadow:0 0 8px #4DD8FF}
+.hud .lg .c19{height:2px;border-radius:2px;background:#FF7AD9;box-shadow:0 0 8px #FF7AD9}
+.hud .lg .l1{background:repeating-linear-gradient(90deg,#E8E4FF 0 1.5px,transparent 1.5px 5px),repeating-linear-gradient(0deg,#E8E4FF 0 1.5px,transparent 1.5px 5px)}
+@media (max-width:1000px){.notch{max-width:100%}.media::before{background:linear-gradient(180deg,rgba(7,4,15,.8) 0%,rgba(7,4,15,.35) 30%,rgba(7,4,15,0) 46%)}}
+@media (max-width:620px){.notch{padding:20px 18px}.hud span,.hud button.wk{font-size:.72rem;padding:7px 10px}.media{height:clamp(640px,calc(100vh - 150px),740px)}}
