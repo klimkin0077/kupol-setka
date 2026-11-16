@@ -137,7 +137,7 @@
   if (c && c.getContext) (function () {
     var g = c.getContext('2d'), box = $('#media'), notch = $('.notch', box), hint = $('#hint');
     var W = 0, H = 0, DPR = Math.min(window.devicePixelRatio || 1, 2), lite = innerWidth < 620;
-    var PX = 2, PZ = 1.25, MH = 1.15, NMX = 4, CAM = 7.5, OFF = -.035, OUT = .55, HF = lite ? 1 : 2;
+    var PX = 2, PZ = 1.25, MH = 1.15, NMX = 4, CAM = 7.5, OFF = -.035, OUT = .55, HF = lite ? 2 : 3;
     var NU = lite ? 32 : 40, NV = lite ? 16 : 24, NB = lite ? 6 : 8;
     var F = 0, CX = 0, CY = 0, yaw = .62, pit = .5, yawT = .62, pitT = .5, idle = 9;
     var cy = 1, sy = 0, cp = 1, sp = 0;
@@ -233,8 +233,10 @@
       var mm = M.length - 1, nn = M[0].length - 1;
       g.beginPath();
       for (j = 0; j <= mm; j++) { g.moveTo(M[j][0][0], M[j][0][1]); for (i = 1; i <= nn; i++) g.lineTo(M[j][i][0], M[j][i][1]); }
+      g.strokeStyle = 'rgba(201,245,91,' + .46 * k + ')'; g.lineWidth = .55; g.stroke();
+      g.beginPath();
       for (j = 0; j < mm; j++) for (i = 0; i <= nn; i++) if ((i % 2 === 1) !== (j % 2 === 1)) { g.moveTo(M[j][i][0], M[j][i][1]); g.lineTo(M[j + 1][i][0], M[j + 1][i][1]); }
-      g.strokeStyle = 'rgba(201,245,91,' + .5 * k + ')'; g.lineWidth = .7; g.stroke();
+      g.strokeStyle = 'rgba(214,250,120,' + .62 * k + ')'; g.lineWidth = 1.15; g.stroke();
       /* тросы */
       function cable(pts, w) { g.beginPath(); pts.forEach(function (p, q) { q ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]); }); g.lineWidth = w; g.stroke(); }
       function col(i2) { var a = []; for (var q = 0; q <= m; q++) a.push(A[i2][q]); return a; }
@@ -248,7 +250,7 @@
         g.strokeStyle = c30; g.shadowColor = 'rgba(77,216,255,.8)';
         for (i = 0; i <= NMX; i++) cable(col(i * n / NMX), 3);
         cable(row(0), 3); cable(row(m), 3); cable(row(m / 2), 3);
-      } else { g.strokeStyle = c30; g.shadowColor = 'rgba(77,216,255,.8)'; cable(row(m), 3); g.shadowBlur = 0; g.strokeStyle = c19; cable(row(m / 2), 1.6); cable(row(0), 1.8); }
+      } else { g.strokeStyle = c30; g.shadowColor = 'rgba(77,216,255,.8)'; cable(row(m), 3); g.shadowBlur = 0; g.strokeStyle = c19; var ns = s < 3 ? NMX * 2 : 4; for (i = 1; i < ns; i += 2) cable(col(Math.round(i * n / ns)), 1.8); cable(row(m / 2), 1.6); cable(row(0), 1.8); }
       g.shadowBlur = 0;
     }
 
@@ -348,7 +350,10 @@
         TL = m.f = []; m.g = [];
         var X = m[0], Z = m[1], ox2 = m[2], oz2 = m[3], dirs;
         boxF(X - .1, X + .1, .05, Z - .1, Z + .1, CONC, CONCT);
-        dirs = [[X * OUT / PX, Z * OUT / PZ]];
+        var sx = X > 0 ? 1 : -1, sz = Z > 0 ? 1 : -1, corner = Math.abs(X) > PX - .01 && Math.abs(Z) > PZ - .01;
+        if (corner) dirs = [[sx * OUT, sz * OUT], [-sx * .3, sz * OUT], [sx * OUT, -sz * .3]];
+        else if (oz2) dirs = [[X * OUT / PX - .3, sz * OUT], [X * OUT / PX + .3, sz * OUT]];
+        else dirs = [[sx * OUT, -.3], [sx * OUT, .3]];
         dirs.forEach(function (d) {
           var cx = X + d[0], cz = Z + d[1], lx = Math.abs(d[0]) > Math.abs(d[1]) ? .06 : .12, lz = lx === .06 ? .12 : .06;
           boxF(cx - lx, cx + lx, .085, cz - lz, cz + lz, CONC, CONCT, { front: { lines: [[[cx - lx, .042, cz + lz], [cx + lx, .042, cz + lz]]] } });
@@ -389,37 +394,67 @@
     }
 
     /* ---------- дрон ---------- */
-    var UAV = [{ r: .15, k: 2.2 }, { r: .12, k: 1.8 }, { r: .22, k: 3 }], utype = 0;
-    function drawUAV(p, R, al, spin, ang, dead, ty) {
-      g.save(); g.translate(p[0], p[1]); g.rotate(ang); g.scale(1, .78); g.globalAlpha = al; g.lineJoin = 'round';
-      var body = '#E9ECF5', edge = 'rgba(12,14,26,.9)';
-      function poly(pts, fill) { g.beginPath(); pts.forEach(function (q, i) { i ? g.lineTo(q[0] * R, q[1] * R) : g.moveTo(q[0] * R, q[1] * R); }); g.closePath(); g.fillStyle = fill; g.fill(); g.strokeStyle = edge; g.lineWidth = Math.max(.8, R * .035); g.stroke(); }
-      function prop(x) {
-        if (!dead) { g.fillStyle = 'rgba(255,255,255,.16)'; g.beginPath(); g.ellipse(x * R, 0, R * .05, R * .3, 0, 0, 7); g.fill(); }
-        var c2 = Math.cos(dead ? .6 : spin); g.strokeStyle = 'rgba(255,255,255,' + (dead ? .9 : .55) + ')'; g.lineWidth = Math.max(1, R * .05);
-        g.beginPath(); g.moveTo(x * R, -c2 * R * .3); g.lineTo(x * R, c2 * R * .3); g.stroke();
+    var UAV = [{ r: .17, k: 2.2 }, { r: .14, k: 1.8 }, { r: .25, k: 3 }], utype = 0;
+    /* беспилотник самолётного типа: объёмная заливка, крен, диск винта, бортовые огни, тень */
+    function drawUAV(p, R, al, spin, ang, dead, ty, bank, seed) {
+      bank = bank || 0;
+      g.save(); g.translate(p[0], p[1]); g.rotate(ang); g.scale(R, R * (.74 + bank * .5)); g.globalAlpha = al; g.lineJoin = 'round'; g.lineCap = 'round';
+      var px = 1 / R, edge = 'rgba(14,16,30,.85)';
+      function grad(x0, y0, x1, y1, c0, c1) { var gr = g.createLinearGradient(x0, y0, x1, y1); gr.addColorStop(0, c0); gr.addColorStop(1, c1); return gr; }
+      function poly(pts, fill, shadow) {
+        g.beginPath(); pts.forEach(function (q, i) { i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1]); }); g.closePath();
+        if (shadow && !lowQ) { g.shadowColor = 'rgba(0,0,10,.55)'; g.shadowBlur = 14; g.shadowOffsetY = R * .45 * DPR; }
+        g.fillStyle = fill; g.fill(); g.shadowColor = 'transparent'; g.shadowBlur = 0; g.shadowOffsetY = 0;
+        g.strokeStyle = edge; g.lineWidth = .9 * px; g.stroke();
       }
+      function seg(x0, y0, x1, y1, w, col) { g.strokeStyle = col; g.lineWidth = w; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke(); }
+      function body(nose, w, x1, tail, tw) {
+        g.beginPath(); g.moveTo(nose, 0); g.bezierCurveTo(nose - .12, -w * 1.15, x1, -w * 1.1, tail, -tw); g.lineTo(tail, tw); g.bezierCurveTo(x1, w * 1.1, nose - .12, w * 1.15, nose, 0); g.closePath();
+        g.fillStyle = grad(0, -w, 0, w, '#C9D0E2', '#8E97B0'); g.fill();
+        g.strokeStyle = edge; g.lineWidth = .9 * px; g.stroke();
+        seg(nose - .1, 0, tail + .05, 0, w * .5, 'rgba(255,255,255,.55)');
+      }
+      function prop(x, r) {
+        if (dead) { for (var q = 0; q < 3; q++) { var a0 = .5 + q * 2.094; seg(x, 0, x + Math.cos(a0) * .03, Math.sin(a0) * r, 2 * px, '#DDE2F0'); } return; }
+        g.fillStyle = 'rgba(255,255,255,.16)'; g.beginPath(); g.ellipse(x, 0, .045, r, 0, 0, 7); g.fill();
+        g.strokeStyle = 'rgba(255,255,255,.5)'; g.lineWidth = .8 * px; g.stroke();
+        var c2 = Math.cos(spin); seg(x, -c2 * r, x, c2 * r, 1.6 * px, 'rgba(255,255,255,.75)');
+      }
+      function light(x, y, col, on) { if (dead || !on) return; g.shadowColor = col; g.shadowBlur = 10; g.fillStyle = col; g.beginPath(); g.arc(x, y, 2.1 * px, 0, 7); g.fill(); g.shadowBlur = 0; g.shadowColor = 'transparent'; }
+      var wingL = grad(0, -1.2, 0, 0, '#F6F8FD', '#B4BCD2'), wingR = grad(0, 0, 0, 1.2, '#AEB6CC', '#8891AA'), blink = Math.sin(t * 9) > 0, strobe = (t * 1.4) % 1 < .12;
       if (ty === 0) { /* самолётная схема: прямое крыло, толкающий винт, оперение на двух балках */
-        g.strokeStyle = body; g.lineWidth = Math.max(1.2, R * .06); g.beginPath(); g.moveTo(.2 * R, -.3 * R); g.lineTo(-.55 * R, -.3 * R); g.moveTo(.2 * R, .3 * R); g.lineTo(-.55 * R, .3 * R); g.stroke();
-        poly([[.14, -1], [.34, -1], [.4, 0], [.34, 1], [.14, 1], [.18, 0]], body);
-        poly([[-.64, -.42], [-.46, -.42], [-.44, .42], [-.64, .42]], body);
-        poly([[1, 0], [.8, -.1], [-.05, -.12], [-.2, 0], [-.05, .12], [.8, .1]], body);
-        prop(-.25);
-      } else if (ty === 1) { /* «утка»: переднее оперение, стреловидное крыло сзади, толкающий винт */
-        poly([[.7, -.38], [.82, -.38], [.86, 0], [.82, .38], [.7, .38], [.75, 0]], body);
-        poly([[-.48, -1], [-.22, -1], [.12, 0], [-.22, 1], [-.48, 1], [-.3, 0]], body);
-        poly([[-.56, -1.04], [-.2, -1.04], [-.2, -.95], [-.56, -.95]], '#9AA3BD'); poly([[-.56, 1.04], [-.2, 1.04], [-.2, .95], [-.56, .95]], '#9AA3BD');
-        poly([[1, 0], [.82, -.09], [-.42, -.11], [-.52, 0], [-.42, .11], [.82, .09]], body);
-        prop(-.58);
-      } else { /* на базе лёгкого самолёта: большой размах, тянущий винт, кабина */
-        poly([[.1, -1.25], [.36, -1.25], [.38, 0], [.36, 1.25], [.1, 1.25], [.12, 0]], body);
-        poly([[-.96, -.42], [-.78, -.42], [-.76, .42], [-.96, .42]], body);
-        poly([[.78, 0], [.7, -.13], [.2, -.16], [-.9, -.05], [-.98, 0], [-.9, .05], [.2, .16], [.7, .13]], body);
-        poly([[.42, -.1], [.6, -.09], [.6, .09], [.42, .1]], '#6FA8E8');
-        prop(.82);
+        poly([[.34, 0], [.27, -1], [.12, -1], [.06, 0]], wingL, 1); poly([[.34, 0], [.27, 1], [.12, 1], [.06, 0]], wingR);
+        seg(.16, -.92, .13, -.5, 1.2 * px, 'rgba(20,24,44,.5)'); seg(.16, .92, .13, .5, 1.2 * px, 'rgba(20,24,44,.5)');
+        seg(.12, -.28, -.66, -.28, .045, '#B9C1D6'); seg(.12, .28, -.66, .28, .045, '#B9C1D6');
+        poly([[-.56, -.3], [-.7, -.3], [-.7, .3], [-.56, .3]], '#C3CADD');
+        poly([[-.52, -.28], [-.76, -.4], [-.76, -.3]], '#8E97B0'); poly([[-.52, .28], [-.76, .4], [-.76, .3]], '#8E97B0');
+        body(.95, .12, .1, -.2, .06);
+        g.fillStyle = '#1A1D2C'; g.beginPath(); g.arc(.84, 0, .04, 0, 7); g.fill();
+        prop(-.22, .26); light(.2, -1, '#FF4D6D', blink); light(.2, 1, '#5BFF9A', blink); light(-.7, 0, '#fff', strobe);
+      } else if (ty === 1) { /* «утка»: переднее оперение, стреловидное крыло сзади, законцовки, толкающий винт */
+        poly([[.05, 0], [-.3, -1], [-.5, -1], [-.36, 0]], wingL, 1); poly([[.05, 0], [-.3, 1], [-.5, 1], [-.36, 0]], wingR);
+        seg(-.4, -.9, -.37, -.45, 1.2 * px, 'rgba(20,24,44,.5)'); seg(-.4, .9, -.37, .45, 1.2 * px, 'rgba(20,24,44,.5)');
+        poly([[-.26, -1], [-.58, -1.07], [-.58, -.97]], '#7F88A2'); poly([[-.26, 1], [-.58, 1.07], [-.58, .97]], '#7F88A2');
+        poly([[.8, 0], [.7, -.37], [.62, -.37], [.68, 0]], wingL); poly([[.8, 0], [.7, .37], [.62, .37], [.68, 0]], wingR);
+        body(1, .095, 0, -.52, .07);
+        g.fillStyle = '#1A1D2C'; g.beginPath(); g.arc(.9, 0, .032, 0, 7); g.fill();
+        prop(-.56, .24); light(-.4, -1, '#FF4D6D', blink); light(-.4, 1, '#5BFF9A', blink); light(.98, 0, '#fff', strobe);
+      } else { /* на базе лёгкого самолёта: высокоплан, тянущий винт, кабина, подкосы, шасси */
+        g.fillStyle = '#20232F'; [-.2, .2].forEach(function (y) { g.beginPath(); g.ellipse(.3, y, .06, .03, 0, 0, 7); g.fill(); });
+        poly([[-.76, 0], [-.8, -.4], [-.95, -.4], [-.97, 0]], wingL); poly([[-.76, 0], [-.8, .4], [-.95, .4], [-.97, 0]], wingR);
+        body(.8, .17, .1, -1, .035);
+        poly([[.46, -.1], [.62, -.085], [.62, .085], [.46, .1]], grad(.46, 0, .62, 0, '#3E6FB8', '#9CC8FF'));
+        seg(.24, -.15, .2, -.62, 1.4 * px, '#9099B2'); seg(.24, .15, .2, .62, 1.4 * px, '#9099B2');
+        poly([[.36, 0], [.34, -1.25], [.1, -1.25], [.08, 0]], wingL, 1); poly([[.36, 0], [.34, 1.25], [.1, 1.25], [.08, 0]], wingR);
+        seg(.14, -1.15, .13, -.6, 1.2 * px, 'rgba(20,24,44,.5)'); seg(.14, 1.15, .13, .6, 1.2 * px, 'rgba(20,24,44,.5)');
+        seg(-.7, 0, -.98, 0, .03, '#7F88A2');
+        g.fillStyle = '#C9D0E2'; g.beginPath(); g.arc(.83, 0, .045, 0, 7); g.fill();
+        prop(.86, .3); light(.22, -1.25, '#FF4D6D', blink); light(.22, 1.25, '#5BFF9A', blink); light(-.98, 0, '#fff', strobe);
       }
-      g.shadowColor = '#FF4D6D'; g.shadowBlur = dead ? 3 : 12; g.fillStyle = dead ? '#8a3344' : '#FF4D6D';
-      g.beginPath(); g.arc((ty === 2 ? .05 : .45) * R, 0, Math.max(1.5, R * .06), 0, 7); g.fill();
+      if (dead) { /* нити сетки поверх: аппарат запутался */
+        var sd = (seed || .3) * 17; g.strokeStyle = 'rgba(201,245,91,.85)'; g.lineWidth = 1.1 * px;
+        for (var e = 0; e < 5; e++) { var a1 = sd + e * 1.3, x0 = Math.cos(a1) * 1.05, y0 = Math.sin(a1) * 1.05, a2 = a1 + 2.4 + (e % 2) * .5; g.beginPath(); g.moveTo(x0, y0); g.quadraticCurveTo(Math.cos(a1 + 1.2) * .25, Math.sin(a1 + 1.2) * .25, Math.cos(a2) * 1.05, Math.sin(a2) * 1.05); g.stroke(); }
+      }
       g.restore();
     }
     function spawn(s, a, b, user) {
@@ -515,7 +550,7 @@
         var d = drones[i]; d.t += dt; var p, R;
         if (d.t < d.T) {
           var kk = d.t / d.T; kk *= kk; var w = S(d.s, d.a, d.b, -.04);
-          p = P3(d.from[0] + (w[0] - d.from[0]) * kk, d.from[1] + (w[1] - d.from[1]) * kk, d.from[2] + (w[2] - d.from[2]) * kk);
+          p = P3(d.from[0] + (w[0] - d.from[0]) * kk, d.from[1] + (w[1] - d.from[1]) * kk + Math.sin(kk * Math.PI) * .22, d.from[2] + (w[2] - d.from[2]) * kk);
           if (d.user) { /* прицел */
             var tp = SP(d.s, d.a, d.b, 0), prr = 11 + 3 * Math.sin(t * 14);
             g.strokeStyle = '#C9F55B'; g.lineWidth = 1.6; g.beginPath(); g.arc(tp[0], tp[1], prr, 0, 7); g.stroke();
@@ -523,15 +558,15 @@
             line2([tp[0], tp[1] - prr - 6], [tp[0], tp[1] - prr + 3]); line2([tp[0], tp[1] + prr - 3], [tp[0], tp[1] + prr + 6]);
           }
           if (d.trail.length) { var l0 = d.trail[d.trail.length - 1]; if (Math.hypot(p[0] - l0[0], p[1] - l0[1]) > .4) d.ang = Math.atan2(p[1] - l0[1], p[0] - l0[0]); }
-          d.trail.push([p[0], p[1]]); if (d.trail.length > 16) d.trail.shift();
-          for (j = 1; j < d.trail.length; j++) { g.strokeStyle = 'rgba(255,77,109,' + (j / d.trail.length) * .7 + ')'; g.lineWidth = 1 + j / d.trail.length * 2; line2(d.trail[j - 1], d.trail[j]); }
+          d.trail.push([p[0], p[1]]); if (d.trail.length > 28) d.trail.shift();
+          var tw2 = p[3] * UAV[d.ty].r * .2; for (j = 1; j < d.trail.length; j++) { var q2 = j / d.trail.length; g.strokeStyle = 'rgba(235,240,255,' + q2 * .3 + ')'; g.lineWidth = 1 + (1 - q2) * tw2; line2(d.trail[j - 1], d.trail[j]); }
           R = p[3] * UAV[d.ty].r * (d.user ? 1 : .8);
-          drawUAV(p, R, 1, t * 40, d.ang, false, d.ty);
+          drawUAV(p, R, 1, t * 46, d.ang, false, d.ty, Math.sin(t * 2.6 + d.tilt * 9) * .16);
         } else {
           if (!d.hit) impact(d);
           var rel = d.t - d.T; if (rel > 2.7) { drones.splice(i, 1); continue; }
           p = SP(d.s, d.a, d.b, -.05); R = p[3] * UAV[d.ty].r * (d.user ? 1 : .8);
-          drawUAV(p, R, rel > 2.1 ? 1 - (rel - 2.1) / .6 : 1, 0, d.ang + d.tilt * (1 - Math.exp(-rel * 7)), true, d.ty);
+          drawUAV(p, R, rel > 2.1 ? 1 - (rel - 2.1) / .6 : 1, 0, d.ang + d.tilt * (1 - Math.exp(-rel * 7)), true, d.ty, 0, d.tilt);
           if (rel < 1.7) {
             var bs = R * 1.25 + 6 * Math.exp(-rel * 6), bl = bs * .35; g.strokeStyle = 'rgba(201,245,91,' + Math.min(1, (1.7 - rel) * 2) + ')'; g.lineWidth = 1.8;
             [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(function (s3) { var cx3 = p[0] + s3[0] * bs, cy3 = p[1] + s3[1] * bs * .62; g.beginPath(); g.moveTo(cx3 - s3[0] * bl, cy3); g.lineTo(cx3, cy3); g.lineTo(cx3, cy3 - s3[1] * bl); g.stroke(); });
@@ -599,7 +634,7 @@
       var raw = (ts - last) / 1000 || 0, dt = Math.min(.05, raw); last = ts;
       if (on && !document.hidden) {
         frame(dt);
-        if (!lowQ && raw < .5) { slow = raw > .03 ? slow + 1 : Math.max(0, slow - 1); if (slow > 45) { lowQ = true; HF = 1; DPR = Math.min(DPR, 1.25); size(); } }
+        if (!lowQ && raw < .5) { slow = raw > .03 ? slow + 1 : Math.max(0, slow - 1); if (slow > 40) { slow = 0; if (HF > 1) HF--; else { lowQ = true; DPR = Math.min(DPR, 1.25); size(); } } }
       }
       requestAnimationFrame(loop);
     });
