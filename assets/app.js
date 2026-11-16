@@ -142,7 +142,7 @@
     var F = 0, CX = 0, CY = 0, yaw = .62, pit = .5, yawT = .62, pitT = .5, idle = 9;
     var cy = 1, sy = 0, cp = 1, sp = 0;
     var t = 0, on = true, hits = 0, next = 3;
-    var rip = [], drones = [], sparks = [], labels = [], G = [];
+    var rip = [], drones = [], sparks = [], labels = [], G = [], frags = [], smoke = [], flash = [];
     var zoom = 1, fx = 0, fy = 0, ox = 0, oy = 0, shake = 0, lowQ = false, slow = 0, weak = false;
     var LX = -.45, LY = .75, LZ = .5, LL = Math.hypot(LX, LY, LZ); LX /= LL; LY /= LL; LZ /= LL;
     /* поверхности: 0 — кровля, 1 — фасад z+, 2 — фасад z−, 3 — торец x+, 4 — торец x− */
@@ -228,30 +228,44 @@
         }
         g.lineTo(prev[0], prev[1]);
       }
-      g.strokeStyle = 'rgba(236,232,255,' + .6 * k + ')'; g.lineWidth = 1.15; g.stroke();
+      var pa = A[n >> 1][0], pb = A[n >> 1][m], gf = pa[2] > pb[2] ? [pa, pb] : [pb, pa];
+      function dgrad(rgb, al) { var gr = g.createLinearGradient(gf[0][0], gf[0][1], gf[1][0], gf[1][1]); gr.addColorStop(0, 'rgba(' + rgb + ',' + al * .38 + ')'); gr.addColorStop(1, 'rgba(' + rgb + ',' + al + ')'); return gr; }
+      if (!far && !lowQ) { g.shadowColor = 'rgba(0,0,12,.75)'; g.shadowOffsetX = 1.4 * DPR; g.shadowOffsetY = 2.2 * DPR; g.shadowBlur = 1; }
+      g.strokeStyle = dgrad('242,238,255', .9 * k); g.lineWidth = 1.55; g.stroke();
+      g.shadowColor = 'transparent'; g.shadowOffsetX = 0; g.shadowOffsetY = 0; g.shadowBlur = 0;
+      if (!far) { /* узлы плетения */
+        g.beginPath();
+        for (j = 0; j <= m; j += 2) for (i = 0; i < n; i++) g.rect((A[i][j][0] + A[i + 1][j][0]) / 2 - 1.5, (A[i][j][1] + A[i + 1][j][1]) / 2 - 1.5, 3, 3);
+        g.fillStyle = 'rgba(255,255,255,.85)'; g.fill();
+      }
       /* «Манье»: мелкая шестигранная ячейка, лежит поверх «Барьера» */
       var mm = M.length - 1, nn = M[0].length - 1;
       g.beginPath();
       for (j = 0; j <= mm; j++) { g.moveTo(M[j][0][0], M[j][0][1]); for (i = 1; i <= nn; i++) g.lineTo(M[j][i][0], M[j][i][1]); }
-      g.strokeStyle = 'rgba(201,245,91,' + .46 * k + ')'; g.lineWidth = .55; g.stroke();
+      g.strokeStyle = dgrad('201,245,91', .62 * k); g.lineWidth = .6; g.stroke();
       g.beginPath();
       for (j = 0; j < mm; j++) for (i = 0; i <= nn; i++) if ((i % 2 === 1) !== (j % 2 === 1)) { g.moveTo(M[j][i][0], M[j][i][1]); g.lineTo(M[j + 1][i][0], M[j + 1][i][1]); }
-      g.strokeStyle = 'rgba(214,250,120,' + .62 * k + ')'; g.lineWidth = 1.15; g.stroke();
-      /* тросы */
-      function cable(pts, w) { g.beginPath(); pts.forEach(function (p, q) { q ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]); }); g.lineWidth = w; g.stroke(); }
-      function col(i2) { var a = []; for (var q = 0; q <= m; q++) a.push(A[i2][q]); return a; }
-      function row(j2) { var a = []; for (var q = 0; q <= n; q++) a.push(A[q][j2]); return a; }
-      var c30 = 'rgba(77,216,255,' + (far ? .5 : 1) + ')', c19 = 'rgba(255,122,217,' + (far ? .45 : .95) + ')';
-      g.shadowBlur = far || lowQ ? 0 : 6;
+      g.strokeStyle = dgrad('214,250,120', .8 * k); g.lineWidth = 1.2; g.stroke();
+      /* тросы: объёмные, с тёмным контуром, свивкой и бликом */
+      function col(i2) { var a2 = []; for (var q = 0; q <= m; q++) a2.push(A[i2][q]); return a2; }
+      function row(j2) { var a2 = []; for (var q = 0; q <= n; q++) a2.push(A[q][j2]); return a2; }
+      var C30 = '77,216,255', C19 = '255,122,217';
       if (s === 0) {
-        g.strokeStyle = c19; g.shadowColor = 'rgba(255,122,217,.8)';
-        for (i = 1; i < NMX * 2; i += 2) cable(col(i * n / (NMX * 2)), 1.8);
-        cable(row(m / 4), 1.8); cable(row(3 * m / 4), 1.8);
-        g.strokeStyle = c30; g.shadowColor = 'rgba(77,216,255,.8)';
-        for (i = 0; i <= NMX; i++) cable(col(i * n / NMX), 3);
-        cable(row(0), 3); cable(row(m), 3); cable(row(m / 2), 3);
-      } else { g.strokeStyle = c30; g.shadowColor = 'rgba(77,216,255,.8)'; cable(row(m), 3); g.shadowBlur = 0; g.strokeStyle = c19; var ns = s < 3 ? NMX * 2 : 4; for (i = 1; i < ns; i += 2) cable(col(Math.round(i * n / ns)), 1.8); cable(row(m / 2), 1.6); cable(row(0), 1.8); }
-      g.shadowBlur = 0;
+        for (i = 1; i < NMX * 2; i += 2) tube(col(i * n / (NMX * 2)), 2.3, C19, far);
+        tube(row(m / 4), 2.3, C19, far); tube(row(3 * m / 4), 2.3, C19, far);
+        for (i = 0; i <= NMX; i++) tube(col(i * n / NMX), 3.7, C30, far);
+        tube(row(0), 3.7, C30, far); tube(row(m), 3.7, C30, far); tube(row(m / 2), 3.7, C30, far);
+      } else {
+        var ns = s < 3 ? NMX * 2 : 4; for (i = 1; i < ns; i += 2) tube(col(Math.round(i * n / ns)), 2.3, C19, far);
+        tube(row(m / 2), 2.1, C19, far); tube(row(0), 2.3, C19, far); tube(row(m), 3.7, C30, far);
+      }
+    }
+    function tube(pts, w, rgb, far) {
+      var sc = Math.max(.6, Math.min(1.8, pts[pts.length >> 1][3] / (F / CAM))) * (far ? .8 : 1), ww = w * sc;
+      function path() { g.beginPath(); for (var q = 0; q < pts.length; q++) q ? g.lineTo(pts[q][0], pts[q][1]) : g.moveTo(pts[q][0], pts[q][1]); }
+      path(); g.strokeStyle = 'rgba(6,8,20,' + (far ? .35 : .78) + ')'; g.lineWidth = ww + 1.8; g.stroke();
+      path(); g.strokeStyle = 'rgba(' + rgb + ',' + (far ? .55 : 1) + ')'; g.lineWidth = ww; g.stroke();
+      if (!far) { g.save(); g.translate(-ww * .16, -ww * .2); path(); g.strokeStyle = 'rgba(255,255,255,.62)'; g.lineWidth = Math.max(.6, ww * .26); g.setLineDash([ww * 1.1, ww * .8]); g.stroke(); g.restore(); }
     }
 
     /* ---------- мачты ---------- */
@@ -262,8 +276,7 @@
       var X = m[0], Z = m[1], w = .045, top = MH, n = 9, q, L = [[-w, -w], [w, -w], [w, w], [-w, w]];
       var a = P3(X, top, Z);
       drawBuilding(m.f);
-      g.strokeStyle = 'rgba(77,216,255,.98)'; g.lineWidth = 2.6; g.beginPath();
-      m.g.forEach(function (e2) { var e = P3(e2[0], .085, e2[1]); g.moveTo(a[0], a[1]); g.lineTo(e[0], e[1]); }); g.stroke();
+      m.g.forEach(function (e2) { tube([a, P3(e2[0], .085, e2[1])], 3.7, '77,216,255', false); });
       g.strokeStyle = 'rgba(240,236,255,.95)'; g.lineWidth = 1.5; g.beginPath();
       L.forEach(function (l) { var p0 = P3(X + l[0], 0, Z + l[1]), p1 = P3(X + l[0], top, Z + l[1]); g.moveTo(p0[0], p0[1]); g.lineTo(p1[0], p1[1]); });
       g.stroke();
@@ -462,12 +475,22 @@
       var from = s === 0 ? [w[0] + r1, w[1] + far, w[2] + r2] : [w[0] + n[0] * far + (n[0] ? 0 : r1), w[1] + .5 + Math.abs(r2) * .6, w[2] + n[2] * far + (n[2] ? 0 : r1)];
       drones.push({ s: s, a: a, b: b, t: 0, T: user ? 1.0 : 1.6, from: from, user: user, hit: false, tilt: (Math.random() - .5) * 1.1, trail: [], ty: user ? utype : (Math.random() * 3 | 0), ang: 0 });
     }
+    /* удар: аппарат разрушается — вспышка, дым, обломки летят и остаются лежать на сетке или земле */
+    function boom(d) {
+      var w = S(d.s, d.a, d.b, -.05), n0 = NRM[d.s], cnt = (d.user ? 20 : 10) + d.ty * 4, i, cols = ['#E9ECF5', '#AEB6CC', '#8891AA', '#3A3F55', '#C9D0E2'];
+      for (i = 0; i < cnt; i++) {
+        var r1 = Math.random() - .5, r2 = Math.random() - .5, sp = .5 + Math.random() * 1.3;
+        frags.push({ x: w[0], y: w[1], z: w[2], vx: n0[0] * sp + r1 * 1.7, vy: (n0[1] ? sp : .5) + Math.random() * .9, vz: n0[2] * sp + r2 * 1.7, rot: Math.random() * 6, vr: (Math.random() - .5) * 14, sz: (.018 + Math.random() * .04) * (1 + d.ty * .25), c: cols[i % cols.length], t: 0, rest: 0, tri: i % 3 === 0 });
+      }
+      for (i = 0; i < 6; i++) smoke.push({ x: w[0] + (Math.random() - .5) * .16, y: w[1] + .03, z: w[2] + (Math.random() - .5) * .16, t: -i * .07, life: 1.5 + Math.random() * .7, r: .1 + Math.random() * .08 });
+      flash.push({ s: d.s, a: d.a, b: d.b, t: 0, k: 1 + d.ty * .35 });
+    }
     function impact(d) {
-      d.hit = true; hits++;
+      d.hit = true; hits++; boom(d);
       rip.push({ s: d.s, a: d.a, b: d.b, t: 0, k: UAV[d.ty].k * (d.user ? 1 : .6), hold: 1 });
       var p = SP(d.s, d.a, d.b, 0), n = d.user ? 30 : 12;
       for (var i = 0; i < n; i++) { var an = Math.random() * 6.28, v = 60 + Math.random() * 240; sparks.push({ x: p[0], y: p[1], vx: Math.cos(an) * v, vy: Math.sin(an) * v * .6 - 60, a: 0, life: .5 + Math.random() * .5 }); }
-      if (d.user) { shake = 9; labels.push({ s: d.s, a: d.a, b: d.b, t: 0 }); }
+      if (d.user) { shake = 10 + d.ty * 3; labels.push({ s: d.s, a: d.a, b: d.b, t: 0 }); }
       if (hint) { hint.classList.add('done'); hint.innerHTML = 'Остановлено беспилотников: <b>' + hits + '</b>'; }
     }
     /* слабые места: провис между мачтами, провис кровли и отступ сетки от стены */
@@ -572,6 +595,32 @@
             [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(function (s3) { var cx3 = p[0] + s3[0] * bs, cy3 = p[1] + s3[1] * bs * .62; g.beginPath(); g.moveTo(cx3 - s3[0] * bl, cy3); g.lineTo(cx3, cy3); g.lineTo(cx3, cy3 - s3[1] * bl); g.stroke(); });
           }
         }
+      }
+      /* вспышка */
+      for (i = flash.length - 1; i >= 0; i--) {
+        var fl = flash[i]; fl.t += dt; if (fl.t > .34) { flash.splice(i, 1); continue; }
+        var fp2 = SP(fl.s, fl.a, fl.b, -.05), fr = (26 + fl.t * 420) * fl.k * fp2[3] / (F / CAM), fa = 1 - fl.t / .34, gr2 = g.createRadialGradient(fp2[0], fp2[1], 0, fp2[0], fp2[1], fr);
+        gr2.addColorStop(0, 'rgba(255,255,255,' + fa + ')'); gr2.addColorStop(.35, 'rgba(255,176,196,' + fa * .7 + ')'); gr2.addColorStop(1, 'rgba(255,77,109,0)');
+        g.fillStyle = gr2; g.beginPath(); g.arc(fp2[0], fp2[1], fr, 0, 7); g.fill();
+      }
+      /* дым */
+      for (i = smoke.length - 1; i >= 0; i--) {
+        var sm = smoke[i]; sm.t += dt; if (sm.t < 0) continue; if (sm.t > sm.life) { smoke.splice(i, 1); continue; }
+        sm.y += .22 * dt; var sp2 = P3(sm.x, sm.y, sm.z), q3 = sm.t / sm.life;
+        g.fillStyle = 'rgba(196,202,220,' + .3 * (1 - q3) + ')'; g.beginPath(); g.arc(sp2[0], sp2[1], (sm.r + q3 * .24) * sp2[3], 0, 7); g.fill();
+      }
+      /* обломки: летят по баллистике, кувыркаются, ложатся на сетку или на землю */
+      for (i = frags.length - 1; i >= 0; i--) {
+        var fg = frags[i]; fg.t += dt; if (fg.t > 4.8) { frags.splice(i, 1); continue; }
+        if (!fg.rest) {
+          fg.vy -= 2.4 * dt; fg.x += fg.vx * dt; fg.y += fg.vy * dt; fg.z += fg.vz * dt; fg.rot += fg.vr * dt;
+          var fu = fg.x / (2 * PX) + .5, fv = fg.z / (2 * PZ) + .5, floor = (fu > 0 && fu < 1 && fv > 0 && fv < 1) ? roofY(fu, fv) - disp(0, fu, fv) + .012 : .02;
+          if (fg.y < floor) { fg.y = floor; fg.vx *= .45; fg.vz *= .45; fg.vr *= .4; if (fg.vy < -.5) fg.vy = -fg.vy * .28; else { fg.rest = 1; fg.vy = 0; } }
+        }
+        var pf = P3(fg.x, fg.y, fg.z), ps = fg.sz * pf[3];
+        g.save(); g.translate(pf[0], pf[1]); g.rotate(fg.rot); g.scale(1, .35 + .65 * Math.abs(Math.cos(fg.rot * 1.7))); g.globalAlpha = fg.t > 4 ? 1 - (fg.t - 4) / .8 : 1;
+        g.beginPath(); if (fg.tri) { g.moveTo(-ps, ps * .6); g.lineTo(ps, ps * .4); g.lineTo(0, -ps); } else g.rect(-ps, -ps * .55, ps * 2, ps * 1.1);
+        g.closePath(); g.fillStyle = fg.c; g.fill(); g.strokeStyle = 'rgba(10,12,24,.85)'; g.lineWidth = .8; g.stroke(); g.restore();
       }
       /* искры */
       for (i = sparks.length - 1; i >= 0; i--) {
